@@ -1,533 +1,169 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Consulta de usuario - Danimo</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel Danimo</title>
+
   <style>
-    :root{
-      --color1: #f7a1b2; /* illusion rosa */
-      --color2: #f6c6d7; /* azalea rosa bb */
-      --fondo:   #f4e1e6; /* vanilla ice */
-      --color4: #e3c8e4; /* snuff lavanda */
-      --color5: #d2a8d6; /* lavanda oscuro */
-      --oscuro: #595154; /* gris */
-      --card-shadow: 0 6px 20px rgba(89,81,84,0.08);
-      --radius: 12px;
-      --max-width: 900px;
+    :root {
+      --color1: #f7a1b2;
+      --color2: #f6c6d7;
+      --fondo:  #f4e1e6;
+      --color4: #e3c8e4;
+      --color5: #d2a8d6;
+      --oscuro: #595154;
     }
 
-    /* Reset ligero */
-    * { box-sizing: border-box; }
-    body{
-      margin:0;
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background: linear-gradient(180deg, var(--fondo), #fff);
+    body {
+      background: var(--fondo);
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      padding-top: 40px;
       color: var(--oscuro);
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      padding: 32px;
-      display:flex;
-      align-items:flex-start;
-      justify-content:center;
-      min-height:100vh;
     }
 
-    .container{
-      width:100%;
-      max-width:var(--max-width);
+    .container {
       background: white;
-      border-radius: calc(var(--radius) + 4px);
-      box-shadow: var(--card-shadow);
-      padding: 22px;
-      border: 1px solid rgba(89,81,84,0.05);
+      width: 450px;
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
-    header{
-      display:flex;
-      gap:16px;
-      align-items:center;
-      margin-bottom:18px;
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
     }
 
-    .logo{
-      width:56px;
-      height:56px;
-      border-radius:12px;
-      background: linear-gradient(135deg, var(--color1), var(--color4));
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:white;
-      font-weight:700;
-      font-size:22px;
-      box-shadow: 0 6px 18px rgba(163,120,140,0.12);
-    }
-
-    h1{ margin:0; font-size:20px; color:var(--oscuro); }
-    p.lead { margin:0; color: #6b6366; font-size:13px; }
-
-    .form-row{
-      display:flex;
-      gap:12px;
-      margin-top:18px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
-    input[type="email"]{
-      flex:1 1 320px;
-      padding:12px 14px;
-      border-radius:10px;
-      border:1px solid rgba(89,81,84,0.08);
-      background: linear-gradient(180deg, rgba(246,198,215,0.35), rgba(226,200,228,0.18));
-      outline:none;
-      font-size:14px;
-      color:var(--oscuro);
-    }
-    input[type="email"]:focus{
-      box-shadow: 0 6px 18px rgba(167,128,146,0.12);
-      border-color: var(--color5);
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--color4);
+      margin-bottom: 20px;
+      font-size: 1em;
     }
 
     .btn {
-      padding:10px 14px;
-      border-radius:10px;
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
       border: none;
-      cursor:pointer;
-      font-weight:600;
-      font-size:14px;
-      display:inline-flex;
-      gap:8px;
-      align-items:center;
-      justify-content:center;
+      cursor: pointer;
+      font-size: 1em;
+      margin-bottom: 12px;
+      transition: 0.2s;
     }
-    .btn-primary{
-      background: linear-gradient(90deg, var(--color1), var(--color4));
+
+    .btn-info { background: var(--color1); }
+    .btn-info:hover { background: var(--color5); }
+
+    .btn-reset { background: var(--color4); }
+    .btn-reset:hover { background: var(--color2); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--color2);
+      margin-top: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid var(--color4);
+      text-align: left;
+    }
+
+    th {
+      background: var(--color5);
       color: white;
-      box-shadow: 0 8px 24px rgba(167,128,146,0.12);
-    }
-    .btn-danger{
-      background: linear-gradient(90deg, #f58a98, #e06aa1);
-      color: white;
-      border:1px solid rgba(0,0,0,0.03);
-    }
-    .btn-ghost{
-      background: transparent;
-      border:1px dashed rgba(89,81,84,0.08);
-      color: var(--oscuro);
-    }
-
-    .controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-
-    .info-card{
-      margin-top:20px;
-      border-radius:10px;
-      padding:14px;
-      background: linear-gradient(180deg, rgba(210,168,214,0.06), rgba(242,231,241,0.04));
-      border:1px solid rgba(210,168,214,0.06);
-    }
-
-    .meta {
-      display:flex;
-      gap:12px;
-      align-items:center;
-      font-size:13px;
-      color:#5f5659;
-      margin-bottom:12px;
-    }
-
-    .result-area{
-      margin-top:12px;
-      max-height:420px;
-      overflow:auto;
-      background: white;
-      border-radius:8px;
-      padding:12px;
-      border: 1px solid rgba(89,81,84,0.03);
-    }
-
-    pre.json {
-      white-space:pre-wrap;
-      word-break:break-word;
-      font-size:13px;
-      line-height:1.35;
-      margin:0;
-    }
-
-    table.data{
-      width:100%;
-      border-collapse:collapse;
-      font-size:13px;
-    }
-    table.data th, table.data td{
-      text-align:left;
-      padding:8px 10px;
-      border-bottom: 1px solid rgba(89,81,84,0.05);
-      vertical-align:top;
-    }
-    table.data th{
-      background: linear-gradient(90deg, var(--color2), var(--color5));
-      color: var(--oscuro);
-      font-weight:600;
-    }
-
-    .small { font-size:12px; color:#6f6668; }
-
-    footer {
-      margin-top:18px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-      flex-wrap:wrap;
-    }
-    .hint {
-      background: linear-gradient(90deg, rgba(247,161,178,0.06), rgba(210,168,214,0.04));
-      padding:8px 12px;
-      border-radius:8px;
-      font-size:13px;
-      color:#6b6366;
-    }
-
-    /* responsive */
-    @media (max-width:560px){
-      .form-row { flex-direction:column; align-items:stretch; }
-      header { gap:10px; }
-      .logo { width:48px; height:48px; font-size:18px; border-radius:10px; }
     }
   </style>
 </head>
+
 <body>
-  <div class="container" role="main">
-    <header>
-      <div class="logo">D</div>
-      <div>
-        <h1>Panel de consulta — Danimo</h1>
-        <p class="lead">Ingresa un e-mail para traer información desde la API y gestionar los datos del día.</p>
-      </div>
-    </header>
+  <div class="container">
+    <h1>Panel Danimo</h1>
 
-    <div class="form-row" aria-label="formulario principal">
-      <input id="email" type="email" placeholder="usuario@dominio.com" aria-label="email usuario" />
-      <div class="controls">
-        <button id="btnFetch" class="btn btn-primary">Traer info</button>
-        <button id="btnReset" class="btn btn-danger" title="Borrar datos del día">Borrar datos del día</button>
-        <button id="btnClearUI" class="btn btn-ghost" title="Limpiar resultados">Limpiar</button>
-      </div>
-    </div>
+    <input type="email" id="email" placeholder="usuario@ejemplo.com"/>
 
-    <div class="info-card" id="infoCard" hidden>
-      <div class="meta">
-        <div id="statusText" class="small">Estado: listo</div>
-        <div id="lastCalled" class="small" aria-hidden="true"></div>
-      </div>
+    <button class="btn btn-info" onclick="fetchInfo()">Traer info</button>
+    <button class="btn btn-reset" onclick="resetData()">Borrar datos del día</button>
 
-      <div class="result-area" id="resultArea" aria-live="polite">
-        <!-- resultados aparecerán aquí -->
-      </div>
-
-      <footer>
-        <div class="hint">Usa el botón "Borrar datos del día" para llamar: <br>
-          <code id="resetPreview" style="font-size:12px; color:var(--oscuro)"></code>
-        </div>
-        <div class="small">Si no configuras una URL de API, la página mostrará datos de ejemplo.</div>
-      </footer>
-    </div>
-
-    <!-- Instrucciones rápidas -->
-    <div style="margin-top:16px; font-size:13px; color:#6b6366;">
-      <strong>Nota técnica:</strong> Abre el bloque <code>API_FETCH_URL</code> en el código y pon la URL real de tu endpoint que reciba el parámetro email (ej: <code>https://miapi.example.com/userinfo?email=</code>).
-    </div>
+    <div id="table-container"></div>
   </div>
 
   <script>
-    const API_FETCH_URL = "https://danimo-fre6fpbjezcyhxed.canadacentral-01.azurewebsites.net/auth/data?email=";
-    const RESET_BASE = "https://danimo-fre6fpbjezcyhxed.canadacentral-01.azurewebsites.net/auth/reset?email=";
+    const API_FETCH_URL = "https://danimo-fre6fpbjezcyhxed.canadacentral-01.azurewebsites.net/auth/data";
+    const API_RESET_URL = "https://danimo-fre6fpbjezcyhxed.canadacentral-01.azurewebsites.net/auth/reset";
 
-    // elementos
-    const emailEl = document.getElementById("email");
-    const btnFetch = document.getElementById("btnFetch");
-    const btnReset = document.getElementById("btnReset");
-    const btnClearUI = document.getElementById("btnClearUI");
-    const resultArea = document.getElementById("resultArea");
-    const infoCard = document.getElementById("infoCard");
-    const statusText = document.getElementById("statusText");
-    const lastCalled = document.getElementById("lastCalled");
-    const resetPreview = document.getElementById("resetPreview");
-
-    function showStatus(text){
-      statusText.textContent = "Estado: " + text;
+    function buildUrl(base, email) {
+      const url = new URL(base);
+      url.searchParams.set("email", email);
+      return url.toString();
     }
 
-    function updateResetPreview(email){
-      if(!email) resetPreview.textContent = RESET_BASE + "<email>";
-      else resetPreview.textContent = RESET_BASE + encodeURIComponent(email);
-    }
+    // Mostrar datos en tabla
+    function renderTable(data) {
+      const container = document.getElementById("table-container");
 
-    function clearResults(){
-      resultArea.innerHTML = "";
-      infoCard.hidden = true;
-      showStatus("listo");
-      lastCalled.textContent = "";
-      updateResetPreview("");
-    }
-
-    // utility: stringify safe (para valores anidados)
-    function safeStringify(v) {
-      if (v === null) return "null";
-      if (v === undefined) return "";
-      if (typeof v === "object") {
-        try { return JSON.stringify(v, null, 2); }
-        catch { return String(v); }
+      // Si el objeto está vacío o no viene nada
+      if (!data || typeof data !== "object") {
+        container.innerHTML = "<p>No hay datos para mostrar.</p>";
+        return;
       }
-      return String(v);
-    }
 
-    // renderiza objeto plano en tabla clave/valor
-    function renderObjectAsKeyValueTable(obj) {
-      const table = document.createElement("table");
-      table.className = "data";
-      const thead = document.createElement("thead");
-      const trh = document.createElement("tr");
-      ["Clave", "Valor"].forEach(h => {
-        const th = document.createElement("th"); th.textContent = h; trh.appendChild(th);
-      });
-      thead.appendChild(trh);
-      table.appendChild(thead);
+      let html = `<table><tr><th>Campo</th><th>Valor</th></tr>`;
 
-      const tbody = document.createElement("tbody");
-      Object.keys(obj).forEach(k => {
-        const tr = document.createElement("tr");
-        const tdk = document.createElement("td");
-        tdk.textContent = k;
-        const tdv = document.createElement("td");
-        const val = obj[k];
-        // Mostrar objetos/arrays con preformateo
-        if (typeof val === "object" && val !== null) {
-          const pre = document.createElement("pre");
-          pre.className = "json";
-          pre.textContent = safeStringify(val);
-          tdv.appendChild(pre);
-        } else {
-          tdv.textContent = safeStringify(val);
+      for (const key in data) {
+        let value = data[key];
+
+        // Si viene JSON anidado, lo convertimos para mostrarlo
+        if (typeof value === "object" && value !== null) {
+          value = JSON.stringify(value, null, 2);
         }
-        tr.appendChild(tdk);
-        tr.appendChild(tdv);
-        tbody.appendChild(tr);
-      });
-      table.appendChild(tbody);
-      return table;
+
+        html += `<tr><td>${key}</td><td>${value}</td></tr>`;
+      }
+
+      html += "</table>";
+      container.innerHTML = html;
     }
 
-    // render principal
-    function renderJSON(data) {
-      // detectar envoltorios comunes: data / result / items
-      if (data && typeof data === "object" && !Array.isArray(data)) {
-        const wrapperKeys = ["data", "result", "items", "rows"];
-        for (const k of wrapperKeys) {
-          if (k in data) {
-            data = data[k];
-            break;
-          }
-        }
-      }
+    async function fetchInfo() {
+      const email = document.getElementById("email").value.trim();
+      if (!email) return alert("Ingresá un email");
 
-      // si es array de objetos
-      if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && !Array.isArray(data[0])) {
-        const keys = Array.from(data.reduce((acc, item) => {
-          Object.keys(item).forEach(k => acc.add(k));
-          return acc;
-        }, new Set()));
-
-        const table = document.createElement("table");
-        table.className = "data";
-        const thead = document.createElement("thead");
-        const trh = document.createElement("tr");
-        keys.forEach(k => {
-          const th = document.createElement("th"); th.textContent = k; trh.appendChild(th);
-        });
-        thead.appendChild(trh);
-        table.appendChild(thead);
-
-        const tbody = document.createElement("tbody");
-        data.forEach(row => {
-          const tr = document.createElement("tr");
-          keys.forEach(k => {
-            const td = document.createElement("td");
-            let val = row[k];
-            if (val === null || val === undefined) val = "";
-            else if (typeof val === 'object') {
-              // si es objeto o array, lo mostramos formateado dentro de <pre>
-              const pre = document.createElement("pre");
-              pre.className = "json";
-              pre.textContent = safeStringify(val);
-              td.appendChild(pre);
-              tr.appendChild(td);
-              return;
-            }
-            td.textContent = String(val);
-            tr.appendChild(td);
-          });
-          tbody.appendChild(tr);
-        });
-        table.appendChild(tbody);
-
-        resultArea.innerHTML = "";
-        resultArea.appendChild(table);
-        return;
-      }
-
-      // si es array de primitivos o arrays anidados
-      if (Array.isArray(data)) {
-        const table = document.createElement("table");
-        table.className = "data";
-        const thead = document.createElement("thead");
-        const trh = document.createElement("tr");
-        const th = document.createElement("th"); th.textContent = "Valor"; trh.appendChild(th);
-        thead.appendChild(trh);
-        table.appendChild(thead);
-
-        const tbody = document.createElement("tbody");
-        data.forEach(item => {
-          const tr = document.createElement("tr");
-          const td = document.createElement("td");
-          if (typeof item === "object") {
-            const pre = document.createElement("pre");
-            pre.className = "json";
-            pre.textContent = safeStringify(item);
-            td.appendChild(pre);
-          } else {
-            td.textContent = String(item);
-          }
-          tr.appendChild(td);
-          tbody.appendChild(tr);
-        });
-        table.appendChild(tbody);
-
-        resultArea.innerHTML = "";
-        resultArea.appendChild(table);
-        return;
-      }
-
-      // si es objeto individual (no array) -> tabla clave/valor
-      if (data && typeof data === "object") {
-        const table = renderObjectAsKeyValueTable(data);
-        resultArea.innerHTML = "";
-        resultArea.appendChild(table);
-        return;
-      }
-
-      // casos simples (string/number)
-      const pre = document.createElement("pre");
-      pre.className = "json";
-      try {
-        pre.textContent = JSON.stringify(data, null, 2);
-      } catch (e) {
-        pre.textContent = String(data);
-      }
-      resultArea.innerHTML = "";
-      resultArea.appendChild(pre);
-    }
-
-    async function fetchInfo(email){
-      if(!email) {
-        alert("Ingresa un e-mail válido.");
-        return;
-      }
-      showStatus("consultando...");
-      infoCard.hidden = false;
-      updateResetPreview(email);
-
-      const ts = new Date().toLocaleString();
-      lastCalled.textContent = "Última consulta: " + ts;
-
-      if(!API_FETCH_URL){
-        await new Promise(r => setTimeout(r, 600));
-        const mock = {
-          data: [
-            { id: 1, email, name: "María Pérez", lastLogin: "2025-11-10T15:23:12Z" },
-            { id: 2, email, name: "María P. (dispositivo 2)", lastLogin: "2025-11-09T10:12:02Z" }
-          ]
-        };
-        renderJSON(mock);
-        showStatus("resultado (modo demo)");
-        return;
-      }
-
-      let url = API_FETCH_URL;
-      if(!url.includes("email=") && !url.endsWith("=")) {
-        if(!url.endsWith("?") && !url.endsWith("&")) url += (url.includes("?") ? "&" : "?");
-        url += "email=";
-      }
-      url = url.replace(/=*$/, "") + encodeURIComponent(email);
+      const url = buildUrl(API_FETCH_URL, email);
 
       try {
-        const resp = await fetch(url, { method: "GET", credentials: "omit" });
-        if(!resp.ok) {
-          const text = await resp.text();
-          showStatus("error: " + resp.status);
-          renderJSON({ error: "Respuesta no OK", status: resp.status, body: text });
-          return;
-        }
-        const contentType = resp.headers.get("content-type") || "";
-        let data;
-        if(contentType.includes("application/json")) {
-          data = await resp.json();
-        } else {
-          const text = await resp.text();
-          try { data = JSON.parse(text); } catch(e) { data = text; }
-        }
-        renderJSON(data);
-        showStatus("resultado recibido");
-      } catch (err) {
-        showStatus("error de conexión");
-        renderJSON({ error: String(err) });
+        const res = await fetch(url);
+        const data = await res.json();
+        renderTable(data);
+      } catch (error) {
+        document.getElementById("table-container").innerHTML = "<p>Error al obtener datos.</p>";
       }
     }
 
-    async function resetDay(email){
-      if(!email){
-        alert("Ingresa un e-mail válido antes de borrar datos.");
-        return;
-      }
-      if(!confirm("¿Confirmas borrar los datos del día para " + email + " ?")) return;
+    async function resetData() {
+      const email = document.getElementById("email").value.trim();
+      if (!email) return alert("Ingresá un email");
 
-      const url = RESET_BASE + encodeURIComponent(email);
-      showStatus("borrando datos...");
-      infoCard.hidden = false;
-      updateResetPreview(email);
-      const ts = new Date().toLocaleString();
-      lastCalled.textContent = "Última acción: " + ts;
+      const url = buildUrl(API_RESET_URL, email);
 
       try {
-        const resp = await fetch(url, { method: "GET", credentials: "omit" });
-        const text = await resp.text();
-        if(!resp.ok) {
-          showStatus("error al borrar: " + resp.status);
-          renderJSON({ status: resp.status, body: text });
-          return;
-        }
-        try { renderJSON(JSON.parse(text)); }
-        catch { renderJSON({ message: text || "Borrado. Respuesta sin cuerpo." }); }
-        showStatus("borrado completado");
-      } catch (err) {
-        showStatus("error de conexión");
-        renderJSON({ error: String(err) });
+        await fetch(url, { method: "POST" });
+        alert("Datos del día borrados correctamente ✅");
+        fetchInfo(); // volver a mostrar datos actualizados
+      } catch {
+        alert("Error al resetear datos ❌");
       }
     }
-
-    // eventos
-    btnFetch.addEventListener("click", () => fetchInfo(emailEl.value.trim()));
-    btnReset.addEventListener("click", () => resetDay(emailEl.value.trim()));
-    btnClearUI.addEventListener("click", clearResults);
-
-    // Enter para submit rápido
-    emailEl.addEventListener("keydown", (e) => {
-      if(e.key === "Enter") { e.preventDefault(); fetchInfo(emailEl.value.trim()); }
-    });
-
-    // Inicial
-    clearResults();
   </script>
+
 </body>
 </html>
