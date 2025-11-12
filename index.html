@@ -62,6 +62,32 @@
     table.subtable th{background:linear-gradient(90deg,var(--color5),var(--color4));color:white;font-weight:700}
     pre.json{white-space:pre-wrap;font-size:13px;margin:0}
 
+    .section {
+      margin-top: 14px;
+      border: 1px solid rgba(89,81,84,0.04);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .section-header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 12px;
+      background: linear-gradient(90deg, rgba(247,161,178,0.04), rgba(210,168,214,0.02));
+      cursor: pointer;
+    }
+    .section-title { font-weight:700; color:var(--oscuro); }
+    .toggle-btn {
+      background: none;
+      border: 1px solid rgba(89,81,84,0.06);
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight:700;
+    }
+    .section-body { padding: 12px; display: none; background: #fff; }
+
     .small{font-size:12px;color:#6f6668}
     @media (max-width:640px){input[type="email"]{flex-basis:100%}.controls{flex-direction:column;width:100%}.btn{width:100%}}
   </style>
@@ -72,7 +98,7 @@
       <div class="logo">D</div>
       <div>
         <h1>Panel Danimo — Consulta</h1>
-        <p class="lead">Ingresa un correo y trae la info. ImportantEvents y SleepRegisters se muestran como sub-tablas.</p>
+        <p class="lead">ImportantEvents y MoodAlternators como tablas contraíbles. SleepRegisters ordenado por fecha.</p>
       </div>
     </header>
 
@@ -92,7 +118,34 @@
       </div>
 
       <div class="result-area" id="resultArea" aria-live="polite">
-        <!-- tabla principal -->
+        <!-- La tabla principal se inyecta aquí -->
+      </div>
+
+      <!-- Secciones contraibles separadas -->
+      <div id="seccionesContainer" style="margin-top:12px">
+
+        <div class="section" id="section-important-events">
+          <div class="section-header" data-target="important-events-body">
+            <div class="section-title">ImportantEvents</div>
+            <button class="toggle-btn" data-target="important-events-body">Abrir</button>
+          </div>
+          <div class="section-body" id="important-events-body">
+            <!-- tabla ImportantEvents -->
+            <div id="importantEventsContainer">(sin datos)</div>
+          </div>
+        </div>
+
+        <div class="section" id="section-mood-alternators" style="margin-top:12px">
+          <div class="section-header" data-target="mood-alternators-body">
+            <div class="section-title">MoodAlternators</div>
+            <button class="toggle-btn" data-target="mood-alternators-body">Abrir</button>
+          </div>
+          <div class="section-body" id="mood-alternators-body">
+            <!-- tabla MoodAlternators -->
+            <div id="moodAlternatorsContainer">(sin datos)</div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -116,65 +169,145 @@
       }
     }
 
-    // crea una celda con texto seguro
-    function tdText(text){
-      const td = document.createElement("td");
-      if (text === null || text === undefined) td.textContent = "";
-      else td.textContent = String(text);
-      return td;
-    }
-
-    // render subtabla para ImportantEvents (espera objeto o array)
-    function renderImportantEvents(value){
-      const wrapper = document.createElement("div");
-      if (!value || (typeof value === 'object' && Object.keys(value).length === 0)) {
-        wrapper.textContent = "(sin eventos importantes)";
-        return wrapper;
-      }
-
-      // si es array de eventos
-      let rows = [];
-      if (Array.isArray(value)) {
-        rows = value.map((v, i) => ({key: String(i), val: v}));
-      } else {
-        // objeto: keys -> eventos
-        rows = Object.keys(value).map(k => ({ key: k, val: value[k] }));
-      }
-
+    // UI helpers
+    function createTableFromObject(obj) {
       const table = document.createElement("table");
-      table.className = "data subtable";
+      table.className = "data";
       const thead = document.createElement("thead");
       const trh = document.createElement("tr");
-      ["Evento", "Detalle"].forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
+      ["Campo","Valor"].forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
       thead.appendChild(trh);
       table.appendChild(thead);
 
       const tbody = document.createElement("tbody");
-      rows.forEach(r => {
+      Object.keys(obj).forEach(key => {
         const tr = document.createElement("tr");
-        const tdKey = document.createElement("td");
-        tdKey.textContent = r.key;
-        tr.appendChild(tdKey);
-
+        const tdKey = document.createElement("td"); tdKey.textContent = key;
         const tdVal = document.createElement("td");
-        if (typeof r.val === "object" && r.val !== null) {
-          const pre = document.createElement("pre");
-          pre.className = "json";
-          pre.textContent = JSON.stringify(r.val, null, 2);
+        const val = obj[key];
+        if (typeof val === "object" && val !== null) {
+          const pre = document.createElement("pre"); pre.className = "json"; pre.textContent = JSON.stringify(val, null, 2);
           tdVal.appendChild(pre);
         } else {
-          tdVal.textContent = String(r.val);
+          tdVal.textContent = val === null || val === undefined ? "" : String(val);
         }
-        tr.appendChild(tdVal);
+        tr.appendChild(tdKey); tr.appendChild(tdVal);
         tbody.appendChild(tr);
       });
-
       table.appendChild(tbody);
-      wrapper.appendChild(table);
-      return wrapper;
+      return table;
     }
 
-    // render subtabla para SleepRegisters: ordena por fecha (soporta array de objetos con campo date o objeto con keys fecha)
+    // ImportantEvents: similar a subtabla, pero se coloca en su sección
+    function renderImportantEventsSection(value){
+      const container = document.getElementById("importantEventsContainer");
+      container.innerHTML = "";
+      if (!value || (typeof value === 'object' && Object.keys(value).length === 0)) {
+        container.textContent = "(sin eventos importantes)";
+        return;
+      }
+
+      // si es array
+      if (Array.isArray(value)) {
+        // crear tabla con columnas detectadas
+        const keys = Array.from(value.reduce((acc, item) => { Object.keys(item).forEach(k=>acc.add(k)); return acc; }, new Set()));
+        const table = document.createElement("table"); table.className = "data subtable";
+        const thead = document.createElement("thead"); const trh = document.createElement("tr");
+        ["Evento"].concat(keys).forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
+        thead.appendChild(trh); table.appendChild(thead);
+        const tbody = document.createElement("tbody");
+        value.forEach((it, idx) => {
+          const tr = document.createElement("tr");
+          const tdIdx = document.createElement("td"); tdIdx.textContent = String(idx+1); tr.appendChild(tdIdx);
+          keys.forEach(k => {
+            const td = document.createElement("td");
+            if (typeof it[k] === "object" && it[k] !== null) {
+              const pre = document.createElement("pre"); pre.className = "json"; pre.textContent = JSON.stringify(it[k], null, 2); td.appendChild(pre);
+            } else td.textContent = it[k] ?? "";
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        container.appendChild(table);
+        return;
+      }
+
+      // si es objeto: keys = eventos
+      const rows = Object.keys(value).map(k => ({ key: k, val: value[k] }));
+      const table = document.createElement("table"); table.className = "data subtable";
+      const thead = document.createElement("thead"); const trh = document.createElement("tr");
+      ["Evento","Detalle"].forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
+      thead.appendChild(trh); table.appendChild(thead);
+      const tbody = document.createElement("tbody");
+      rows.forEach(r => {
+        const tr = document.createElement("tr");
+        const tdKey = document.createElement("td"); tdKey.textContent = r.key; tr.appendChild(tdKey);
+        const tdVal = document.createElement("td");
+        if (typeof r.val === "object" && r.val !== null) {
+          const pre = document.createElement("pre"); pre.className = "json"; pre.textContent = JSON.stringify(r.val, null, 2); tdVal.appendChild(pre);
+        } else tdVal.textContent = String(r.val ?? "");
+        tr.appendChild(tdVal); tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      container.appendChild(table);
+    }
+
+    // MoodAlternators: similar a ImportantEvents
+    function renderMoodAlternatorsSection(value){
+      const container = document.getElementById("moodAlternatorsContainer");
+      container.innerHTML = "";
+      if (!value || (typeof value === 'object' && Object.keys(value).length === 0)) {
+        container.textContent = "(sin alternadores de ánimo)";
+        return;
+      }
+
+      // si es array
+      if (Array.isArray(value)) {
+        const keys = Array.from(value.reduce((acc, item) => { Object.keys(item).forEach(k=>acc.add(k)); return acc; }, new Set()));
+        const table = document.createElement("table"); table.className = "data subtable";
+        const thead = document.createElement("thead"); const trh = document.createElement("tr");
+        ["#"].concat(keys).forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
+        thead.appendChild(trh); table.appendChild(thead);
+        const tbody = document.createElement("tbody");
+        value.forEach((it, idx) => {
+          const tr = document.createElement("tr");
+          const tdIdx = document.createElement("td"); tdIdx.textContent = String(idx+1); tr.appendChild(tdIdx);
+          keys.forEach(k => {
+            const td = document.createElement("td");
+            if (typeof it[k] === "object" && it[k] !== null) {
+              const pre = document.createElement("pre"); pre.className = "json"; pre.textContent = JSON.stringify(it[k], null, 2); td.appendChild(pre);
+            } else td.textContent = it[k] ?? "";
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        container.appendChild(table);
+        return;
+      }
+
+      // si es objeto
+      const rows = Object.keys(value).map(k => ({ key: k, val: value[k] }));
+      const table = document.createElement("table"); table.className = "data subtable";
+      const thead = document.createElement("thead"); const trh = document.createElement("tr");
+      ["Clave","Valor"].forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
+      thead.appendChild(trh); table.appendChild(thead);
+      const tbody = document.createElement("tbody");
+      rows.forEach(r => {
+        const tr = document.createElement("tr");
+        const tdKey = document.createElement("td"); tdKey.textContent = r.key; tr.appendChild(tdKey);
+        const tdVal = document.createElement("td");
+        if (typeof r.val === "object" && r.val !== null) {
+          const pre = document.createElement("pre"); pre.className = "json"; pre.textContent = JSON.stringify(r.val, null, 2); tdVal.appendChild(pre);
+        } else tdVal.textContent = String(r.val ?? "");
+        tr.appendChild(tdVal); tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      container.appendChild(table);
+    }
+
+    // SleepRegisters renderer (igual que antes)
     function renderSleepRegisters(value){
       const wrapper = document.createElement("div");
       if (!value || (typeof value === 'object' && Object.keys(value).length === 0)) {
@@ -185,14 +318,11 @@
       let records = [];
 
       if (Array.isArray(value)) {
-        // array de registros — intentamos extraer campo date o createdAt
         records = value.map(r => {
-          // buscar la clave con fecha
           let dateStr = null;
           if (r.date) dateStr = r.date;
           else if (r.createdAt) dateStr = r.createdAt;
           else {
-            // buscar primer campo que parezca fecha
             for (const k in r) {
               if (typeof r[k] === "string" && /\d{4}-\d{2}-\d{2}/.test(r[k])) { dateStr = r[k]; break; }
             }
@@ -200,17 +330,14 @@
           return { date: dateStr, record: r };
         });
       } else {
-        // si es objeto donde keys son fechas
         records = Object.keys(value).map(k => ({ date: k, record: value[k] }));
       }
 
-      // normalizar y filtrar registros sin fecha parseable
       records = records.map(r => {
         const d = r.date ? new Date(r.date) : null;
         return { dateRaw: r.date || null, dateObj: isNaN(d) ? null : d, record: r.record };
       });
 
-      // ordenar: con fecha -> descendente o ascendente? pediste "ordenadas como subtabla" — vamos ascendente (antiguo -> nuevo)
       records.sort((a,b) => {
         if (a.dateObj && b.dateObj) return a.dateObj - b.dateObj;
         if (a.dateObj) return -1;
@@ -218,13 +345,10 @@
         return 0;
       });
 
-      const table = document.createElement("table");
-      table.className = "data subtable";
-      const thead = document.createElement("thead");
-      const trh = document.createElement("tr");
+      const table = document.createElement("table"); table.className = "data subtable";
+      const thead = document.createElement("thead"); const trh = document.createElement("tr");
       ["Fecha", "Detalle"].forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
-      thead.appendChild(trh);
-      table.appendChild(thead);
+      thead.appendChild(trh); table.appendChild(thead);
 
       const tbody = document.createElement("tbody");
       records.forEach(r => {
@@ -232,81 +356,72 @@
         const tdDate = document.createElement("td");
         tdDate.textContent = r.dateRaw ? (r.dateObj ? r.dateObj.toISOString().split('T')[0] : r.dateRaw) : "(sin fecha)";
         tr.appendChild(tdDate);
-
         const tdDetail = document.createElement("td");
         if (typeof r.record === "object" && r.record !== null) {
-          const pre = document.createElement("pre");
-          pre.className = "json";
-          pre.textContent = JSON.stringify(r.record, null, 2);
-          tdDetail.appendChild(pre);
-        } else {
-          tdDetail.textContent = String(r.record);
-        }
-        tr.appendChild(tdDetail);
-        tbody.appendChild(tr);
+          const pre = document.createElement("pre"); pre.className = "json"; pre.textContent = JSON.stringify(r.record, null, 2); tdDetail.appendChild(pre);
+        } else tdDetail.textContent = String(r.record);
+        tr.appendChild(tdDetail); tbody.appendChild(tr);
       });
-
       table.appendChild(tbody);
       wrapper.appendChild(table);
       return wrapper;
     }
 
-    // render tabla principal con manejo especial de ImportantEvents y SleepRegisters
-    function renderMainTable(obj){
+    // Render principal (muestra campos principales y coloca secciones)
+    function renderMainTable(obj) {
       const container = document.getElementById("resultArea");
-      container.innerHTML = ""; // limpiar
+      container.innerHTML = "";
 
-      if (!obj || typeof obj !== "object"){
+      if (!obj || typeof obj !== "object") {
         container.textContent = "Respuesta inválida";
         return;
       }
 
-      const table = document.createElement("table");
-      table.className = "data";
-      const thead = document.createElement("thead");
-      const trh = document.createElement("tr");
+      const table = document.createElement("table"); table.className = "data";
+      const thead = document.createElement("thead"); const trh = document.createElement("tr");
       ["Campo","Valor"].forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
-      thead.appendChild(trh);
-      table.appendChild(thead);
-
+      thead.appendChild(trh); table.appendChild(thead);
       const tbody = document.createElement("tbody");
 
-      // Iterar claves en orden: id, firstName... para mejor legibilidad opcionalmente
-      const preferredOrder = ["id","firstName","lastName","email","birthDate","gender","ImportantEvents","SleepRegisters"];
+      const preferredOrder = ["id","firstName","lastName","email","birthDate","gender"];
       const keys = Array.from(new Set([...preferredOrder.filter(k=>k in obj), ...Object.keys(obj).filter(k=>!preferredOrder.includes(k))]));
 
       keys.forEach(key => {
-        const val = obj[key];
-        const tr = document.createElement("tr");
-        const tdk = document.createElement("td");
-        tdk.textContent = key;
-        tr.appendChild(tdk);
-
-        const tdv = document.createElement("td");
-
-        if (key === "ImportantEvents") {
-          tdv.appendChild(renderImportantEvents(val));
-        } else if (key === "SleepRegisters") {
-          tdv.appendChild(renderSleepRegisters(val));
-        } else if (typeof val === "object" && val !== null) {
-          // otros objetos los mostramos como JSON preformateado
-          const pre = document.createElement("pre");
-          pre.className = "json";
-          pre.textContent = JSON.stringify(val, null, 2);
-          tdv.appendChild(pre);
+        if (key === "ImportantEvents" || key === "MoodAlternators" || key === "SleepRegisters") {
+          // No mostrar aquí: se colocan en sus secciones
+          const tr = document.createElement("tr");
+          const tdKey = document.createElement("td"); tdKey.textContent = key;
+          const tdVal = document.createElement("td");
+          if (key === "SleepRegisters") {
+            tdVal.appendChild(renderSleepRegisters(obj[key]));
+          } else {
+            tdVal.textContent = "(ver sección abajo)";
+          }
+          tr.appendChild(tdKey); tr.appendChild(tdVal); tbody.appendChild(tr);
         } else {
-          tdv.textContent = val === null || val === undefined ? "" : String(val);
+          const tr = document.createElement("tr");
+          const tdKey = document.createElement("td"); tdKey.textContent = key;
+          const tdVal = document.createElement("td");
+          const val = obj[key];
+          if (typeof val === "object" && val !== null) {
+            const pre = document.createElement("pre"); pre.className = "json"; pre.textContent = JSON.stringify(val, null, 2);
+            tdVal.appendChild(pre);
+          } else tdVal.textContent = val === null || val === undefined ? "" : String(val);
+          tr.appendChild(tdKey); tr.appendChild(tdVal); tbody.appendChild(tr);
         }
-
-        tr.appendChild(tdv);
-        tbody.appendChild(tr);
       });
 
       table.appendChild(tbody);
       container.appendChild(table);
+
+      // actualizar secciones
+      renderImportantEventsSection(obj.ImportantEvents);
+      renderMoodAlternatorsSection(obj.MoodAlternators);
+      // SleepRegisters ya fue colocada en la tabla principal (como subtabla) pero la sección puede mostrarlo también:
+      const seccionSleep = document.getElementById("section-important-events"); // no hacer nada especial aquí
     }
 
-    // FUNCIONES de fetch / reset
+    // fetch / reset
     async function fetchInfo(email){
       if(!email) { alert("Ingresá un email válido"); return; }
       showStatus("consultando...");
@@ -329,7 +444,6 @@
           try { data = JSON.parse(txt); } catch(e) { data = { raw: txt }; }
         }
 
-        // si viene envuelto en { data: ... } o { result: ... } desempacar
         if (data && typeof data === "object") {
           const wrapperKeys = ["data", "result", "rows", "items"];
           for (const k of wrapperKeys) {
@@ -337,7 +451,6 @@
           }
         }
 
-        // Si la respuesta es un array con un solo objeto, tomamos el primero
         if (Array.isArray(data) && data.length === 1 && typeof data[0] === "object") data = data[0];
 
         renderMainTable(data);
@@ -361,7 +474,7 @@
         const txt = await resp.text();
         try {
           const json = JSON.parse(txt);
-          renderMainTable(json); // si devuelve data actualizada
+          renderMainTable(json);
         } catch(e){
           document.getElementById("resultArea").textContent = txt || "Borrado completado";
         }
@@ -372,14 +485,48 @@
       }
     }
 
+    // Collapsible behavior
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        const body = document.getElementById(targetId);
+        if (!body) return;
+        const isOpen = body.style.display === 'block';
+        body.style.display = isOpen ? 'none' : 'block';
+        btn.textContent = isOpen ? 'Abrir' : 'Cerrar';
+      });
+    });
+    // also allow clicking header to toggle
+    document.querySelectorAll('.section-header').forEach(h => {
+      h.addEventListener('click', (e) => {
+        // ignore clicks on buttons (they are handled separately)
+        if (e.target && e.target.tagName === 'BUTTON') return;
+        const targetId = h.getAttribute('data-target');
+        const body = document.getElementById(targetId);
+        const btn = h.querySelector('.toggle-btn');
+        if (!body || !btn) return;
+        const isOpen = body.style.display === 'block';
+        body.style.display = isOpen ? 'none' : 'block';
+        btn.textContent = isOpen ? 'Abrir' : 'Cerrar';
+      });
+    });
+
     // eventos
     document.getElementById("btnFetch").addEventListener("click", () => fetchInfo(document.getElementById("email").value.trim()));
     document.getElementById("btnReset").addEventListener("click", () => resetDay(document.getElementById("email").value.trim()));
     document.getElementById("btnClearUI").addEventListener("click", () => {
       document.getElementById("resultArea").innerHTML = "";
+      document.getElementById("importantEventsContainer").innerHTML = "(sin datos)";
+      document.getElementById("moodAlternatorsContainer").innerHTML = "(sin datos)";
       document.getElementById("infoCard").hidden = true;
       showStatus("listo");
       document.getElementById("lastCalled").textContent = "";
+      // collapse sections
+      ['important-events-body','mood-alternators-body'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      document.querySelectorAll('.toggle-btn').forEach(b => b.textContent = 'Abrir');
     });
 
     // Enter para submit
@@ -389,6 +536,10 @@
 
     // init
     showStatus("listo");
+    // start sections collapsed
+    ['important-events-body','mood-alternators-body'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
   </script>
 </body>
 </html>
